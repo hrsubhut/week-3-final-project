@@ -1,0 +1,43 @@
+import streamlit as st
+from tensorflow.keras.preprocessing import image
+from tensorflow.keras.models import load_model
+import numpy as np
+import matplotlib.pyplot as plt
+from PIL import Image
+
+# Load the trained model (make sure it's the correct one for image input)
+model = load_model("your_model.h5")  # update with actual path
+classes = ['healthy', 'bacterial_spot', 'early_blight', 'late_blight', 'leaf_mold']  # your class names
+
+# Prediction function
+def predict_leaf_health(img):
+    img = img.resize((224, 224))
+    img_array = image.img_to_array(img)
+    img_array = np.expand_dims(img_array, axis=0)
+    img_array = img_array / 255.0  # normalize
+
+    predictions = model.predict(img_array)
+    predicted_class_index = np.argmax(predictions)
+    predicted_class = classes[predicted_class_index]
+    probability = predictions[0][predicted_class_index]
+    return predicted_class, probability
+
+# Streamlit UI
+st.title("Leaf Health Detector 🌿")
+st.write("Upload a leaf image to check if it's healthy or diseased.")
+
+uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+
+if uploaded_file is not None:
+    image_pil = Image.open(uploaded_file).convert("RGB")
+
+    st.image(image_pil, caption="Uploaded Leaf Image", use_column_width=True)
+
+    predicted_class, prob = predict_leaf_health(image_pil)
+    st.markdown(f"**Predicted Class:** {predicted_class}")
+    st.markdown(f"**Confidence:** {prob:.2f}")
+
+    if "healthy" in predicted_class.lower():
+        st.success("✅ This leaf appears to be healthy.")
+    else:
+        st.error("⚠️ This leaf may not be healthy.")
